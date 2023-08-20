@@ -1,14 +1,26 @@
-use std::env::Args;
+use actix_web::{get, web, App, HttpServer, Responder};
+use serde::{Deserialize, Serialize};
+use serde_json;
+use std::fs;
 
-use actix_web::{get, App, HttpServer, Responder};
+#[derive(Serialize, Deserialize)]
+struct FeedConfig {
+    name: String,
+    url: String,
+    match_pattern: String,
+    replace_pattern: String,
+}
 
-use error_chain::error_chain;
+fn get_feed_config(feed_name: String) -> Result<FeedConfig, String> {
+    let config = fs::read_to_string("./feeds.json").expect("Unable to read file!");
+    let feed_config: FeedConfig = serde_json::from_str(&config).expect("Couldn't parse JSON");
 
-error_chain! {
-     foreign_links {
-         Io(std::io::Error);
-         HttpRequest(reqwest::Error);
-     }
+    // TODO: Support for multiple feeds
+    if feed_name == feed_config.name {
+        Ok(feed_config)
+    } else {
+        Err(format!("Config not found for feed {}", feed_name))
+    }
 }
 
 #[actix_web::main]
@@ -19,14 +31,28 @@ async fn main() -> std::io::Result<()> {
         .await
 }
 
-#[get("/feed")]
-async fn serve_feed() -> impl Responder {
-    let upstream_feed_url: String = "".to_string();
+// TODO: Return a file instead of text
+// TODO: Modify RSS address to address from GET request
+#[get("/{feed}")]
+async fn serve_feed(feed: web::Path<String>) -> impl Responder {
+    let feed_config: FeedConfig = match get_feed_config(feed.to_string()) {
+        Ok(config) => config,
+        Err(e) => return format!("{}", e),
+    };
 
-    match download_feed(upstream_feed_url).await {
-        Ok(feed_contents) => format!("{}", feed_contents),
-        Err(e) => format!("Failed to fetch feed with error: {:?}", e),
-    }
+    let feed_content: String = feed_modifier(feed_config).await;
+
+    format!("{}", feed_content)
+}
+
+// TODO: actually modify stuff
+async fn feed_modifier(feed_config: FeedConfig) -> String {
+    let feed = match download_feed(feed_config.url).await {
+        Ok(feed_contents) => feed_contents,
+        Err(e) => panic!("Failed to fetch feed with error: {}", e),
+    };
+
+    feed
 }
 
 async fn download_feed(upstream_feed_url: String) -> reqwest::Result<String> {
