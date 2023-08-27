@@ -13,13 +13,16 @@ struct FeedConfig {
 
 fn read_feed_config(feed_name: String) -> Result<FeedConfig, String> {
     let config = fs::read_to_string("./feeds.json").expect("Unable to read file!");
-    let feed_config: FeedConfig = serde_json::from_str(&config).expect("Couldn't parse JSON");
+    let feed_config: FeedConfig = match serde_json::from_str(&config) {
+        Ok(x) => x,
+        Err(e) => panic!("Failed to read configuration file with error: {}", e),
+    };
 
     // TODO: Support for multiple feeds
     if feed_name == feed_config.name {
         Ok(feed_config)
     } else {
-        Err(format!("Config not found for feed {}", feed_name))
+        Err(feed_name)
     }
 }
 
@@ -37,12 +40,12 @@ async fn main() -> std::io::Result<()> {
 async fn rss_exp(feed: web::Path<String>) -> impl Responder {
     let feed_config: FeedConfig = match read_feed_config(feed.to_string()) {
         Ok(config) => config,
-        Err(e) => return format!("Failed to read config with error: {}", e),
+        Err(feed_name) => return format!("Config not found for feed: {}", feed_name),
     };
 
     let feed_content = match download_feed(feed_config.url).await {
         Ok(feed_contents) => feed_contents,
-        Err(e) => panic!("Failed to fetch feed with error: {}", e),
+        Err(e) => return format!("Failed to fetch feed with error: {}", e),
     };
 
     format!("{}", feed_content)
