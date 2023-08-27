@@ -12,10 +12,15 @@ struct FeedConfig {
 }
 
 fn read_feed_config(feed_name: String) -> Result<FeedConfig, String> {
-    let config = fs::read_to_string("./feeds.json").expect("Unable to read file!");
+    //    let config = fs::read_to_string("./feeds.json").expect("Unable to read file!");
+    let config = match fs::read_to_string("./feeds.json") {
+        Ok(x) => x,
+        Err(e) => panic!("Failed to read ./feeds.json file with error: {}", e),
+    };
+
     let feed_config: FeedConfig = match serde_json::from_str(&config) {
         Ok(x) => x,
-        Err(e) => panic!("Failed to read configuration file with error: {}", e),
+        Err(e) => panic!("Failed to parse JSON with error: {}", e),
     };
 
     // TODO: Support for multiple feeds
