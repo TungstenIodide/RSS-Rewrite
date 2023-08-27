@@ -47,8 +47,6 @@ async fn main() -> std::io::Result<()> {
         .await
 }
 
-// TODO: Return a file instead of text
-// TODO: Modify RSS address to address from GET request
 #[get("/{feed}")]
 async fn rss_exp(feed: web::Path<String>) -> Result<HttpResponse, Error> {
     // TODO: Multiple feeds
