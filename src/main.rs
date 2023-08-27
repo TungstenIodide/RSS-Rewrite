@@ -11,7 +11,7 @@ struct FeedConfig {
     replace_pattern: String,
 }
 
-fn get_feed_config(feed_name: String) -> Result<FeedConfig, String> {
+fn read_feed_config(feed_name: String) -> Result<FeedConfig, String> {
     let config = fs::read_to_string("./feeds.json").expect("Unable to read file!");
     let feed_config: FeedConfig = serde_json::from_str(&config).expect("Couldn't parse JSON");
 
@@ -35,7 +35,7 @@ async fn main() -> std::io::Result<()> {
 // TODO: Modify RSS address to address from GET request
 #[get("/{feed}")]
 async fn rss_exp(feed: web::Path<String>) -> impl Responder {
-    let feed_config: FeedConfig = match get_feed_config(feed.to_string()) {
+    let feed_config: FeedConfig = match read_feed_config(feed.to_string()) {
         Ok(config) => config,
         Err(e) => return format!("Failed to read config with error: {}", e),
     };
