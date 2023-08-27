@@ -37,23 +37,19 @@ async fn main() -> std::io::Result<()> {
 async fn rss_exp(feed: web::Path<String>) -> impl Responder {
     let feed_config: FeedConfig = match get_feed_config(feed.to_string()) {
         Ok(config) => config,
-        Err(e) => return format!("{}", e),
+        Err(e) => return format!("Failed to read config with error: {}", e),
     };
 
-    let feed_content: String = feed_modifier(feed_config).await;
+    let feed_content = match download_feed(feed_config.url).await {
+        Ok(feed_contents) => feed_contents,
+        Err(e) => panic!("Failed to fetch feed with error: {}", e),
+    };
 
     format!("{}", feed_content)
 }
 
 // TODO: actually modify stuff
-async fn feed_modifier(feed_config: FeedConfig) -> String {
-    let feed = match download_feed(feed_config.url).await {
-        Ok(feed_contents) => feed_contents,
-        Err(e) => panic!("Failed to fetch feed with error: {}", e),
-    };
-
-    feed
-}
+//async fn feed_modifier(feed_config: FeedConfig) -> String {}
 
 async fn download_feed(upstream_feed_url: String) -> reqwest::Result<String> {
     let feed_contents = reqwest::get(upstream_feed_url).await?.text().await?;
