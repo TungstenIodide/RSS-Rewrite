@@ -41,14 +41,14 @@ lazy_static! {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    HttpServer::new(|| App::new().service(rss_exp))
+    HttpServer::new(|| App::new().service(rss_rewrite))
         .bind(("127.0.0.1", 8080))?
         .run()
         .await
 }
 
 #[get("/{feed}")]
-async fn rss_exp(feed: web::Path<String>) -> Result<HttpResponse, Error> {
+async fn rss_rewrite(feed: web::Path<String>) -> Result<HttpResponse, Error> {
     // TODO: Multiple feeds
     let feed_config: &FeedConfig = match get_feed_config(feed.to_string()) {
         Ok(()) => &CONFIG,
