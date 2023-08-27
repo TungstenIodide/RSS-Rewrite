@@ -12,7 +12,6 @@ struct FeedConfig {
 }
 
 fn read_feed_config(feed_name: String) -> Result<FeedConfig, String> {
-    //    let config = fs::read_to_string("./feeds.json").expect("Unable to read file!");
     let config = match fs::read_to_string("./feeds.json") {
         Ok(x) => x,
         Err(e) => panic!("Failed to read ./feeds.json file with error: {}", e),
