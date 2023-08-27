@@ -1,33 +1,42 @@
-use actix_web::{get, web, App, HttpServer, Responder};
-use serde::{Deserialize, Serialize};
-use serde_json;
+#[macro_use]
+extern crate serde_derive;
+extern crate lazy_static;
+
+extern crate serde;
+extern crate serde_json;
+extern crate serde_regex;
+
+use actix_web::{get, web, App, Error, HttpResponse, HttpServer};
+use lazy_static::lazy_static;
+use regex::Regex;
+use reqwest::StatusCode;
 use std::fs;
 
 #[derive(Serialize, Deserialize)]
 struct FeedConfig {
     name: String,
     url: String,
-    match_pattern: String,
+    #[serde(with = "serde_regex")]
+    match_pattern: Regex,
     replace_pattern: String,
 }
 
-fn read_feed_config(feed_name: String) -> Result<FeedConfig, String> {
-    let config = match fs::read_to_string("./feeds.json") {
+fn read_configuration() -> FeedConfig {
+    let configuration = match fs::read_to_string("./feeds.json") {
         Ok(x) => x,
         Err(e) => panic!("Failed to read ./feeds.json file with error: {}", e),
     };
 
-    let feed_config: FeedConfig = match serde_json::from_str(&config) {
+    let feed_config: FeedConfig = match serde_json::from_str(&configuration) {
         Ok(x) => x,
         Err(e) => panic!("Failed to parse JSON with error: {}", e),
     };
 
-    // TODO: Support for multiple feeds
-    if feed_name == feed_config.name {
-        Ok(feed_config)
-    } else {
-        Err(feed_name)
-    }
+    feed_config
+}
+
+lazy_static! {
+    static ref CONFIG: FeedConfig = read_configuration();
 }
 
 #[actix_web::main]
@@ -41,24 +50,46 @@ async fn main() -> std::io::Result<()> {
 // TODO: Return a file instead of text
 // TODO: Modify RSS address to address from GET request
 #[get("/{feed}")]
-async fn rss_exp(feed: web::Path<String>) -> impl Responder {
-    let feed_config: FeedConfig = match read_feed_config(feed.to_string()) {
-        Ok(config) => config,
-        Err(feed_name) => return format!("Config not found for feed: {}", feed_name),
+async fn rss_exp(feed: web::Path<String>) -> Result<HttpResponse, Error> {
+    // TODO: Multiple feeds
+    let feed_config: &FeedConfig = match get_feed_config(feed.to_string()) {
+        Ok(()) => &CONFIG,
+        Err(feed_name) => return not_found(format!("Feed not found: {}", feed_name)).await,
     };
 
-    let feed_content = match download_feed(feed_config.url).await {
+    let mut feed_content: String = match download_feed(&feed_config.url).await {
         Ok(feed_contents) => feed_contents,
-        Err(e) => return format!("Failed to fetch feed with error: {}", e),
+        Err(e) => return not_found(format!("Failed to fetch feed with error: {}", e)).await,
     };
 
-    format!("{}", feed_content)
+    feed_content = feed_modifier(&feed_config, &mut feed_content);
+
+    Ok(HttpResponse::build(StatusCode::OK)
+        .content_type("application/rss+xml")
+        .body(feed_content))
+}
+
+// TODO: Support for multiple feeds
+fn get_feed_config(feed_name: String) -> Result<(), String> {
+    if feed_name == CONFIG.name {
+        Ok(())
+    } else {
+        Err(feed_name)
+    }
 }
 
 // TODO: actually modify stuff
-//async fn feed_modifier(feed_config: FeedConfig) -> String {}
+fn feed_modifier(_feed_config: &FeedConfig, feed_content: &mut String) -> String {
+    feed_content.to_string()
+}
 
-async fn download_feed(upstream_feed_url: String) -> reqwest::Result<String> {
+async fn download_feed(upstream_feed_url: &String) -> reqwest::Result<String> {
     let feed_contents = reqwest::get(upstream_feed_url).await?.text().await?;
     Ok(feed_contents)
+}
+
+async fn not_found(error_message: String) -> Result<HttpResponse, Error> {
+    Ok(HttpResponse::build(StatusCode::NOT_FOUND)
+        .content_type("text/html; charset=utf-8")
+        .body(error_message))
 }
