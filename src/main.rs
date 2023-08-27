@@ -62,7 +62,7 @@ async fn rss_exp(feed: web::Path<String>) -> Result<HttpResponse, Error> {
         Err(e) => return not_found(format!("Failed to fetch feed with error: {}", e)).await,
     };
 
-    feed_content = feed_modifier(&feed_config, &mut feed_content);
+    feed_content = feed_modifier(&feed_config, feed_content);
 
     Ok(HttpResponse::build(StatusCode::OK)
         .content_type("application/rss+xml")
@@ -78,14 +78,15 @@ fn get_feed_config(feed_name: String) -> Result<(), String> {
     }
 }
 
-// TODO: actually modify stuff
-fn feed_modifier(_feed_config: &FeedConfig, feed_content: &mut String) -> String {
-    feed_content.to_string()
+fn feed_modifier(feed_config: &FeedConfig, feed_content: String) -> String {
+    feed_config
+        .match_pattern
+        .replace_all(&feed_content, &feed_config.replace_pattern)
+        .to_string()
 }
 
 async fn download_feed(upstream_feed_url: &String) -> reqwest::Result<String> {
-    let feed_contents = reqwest::get(upstream_feed_url).await?.text().await?;
-    Ok(feed_contents)
+    Ok(reqwest::get(upstream_feed_url).await?.text().await?)
 }
 
 async fn not_found(error_message: String) -> Result<HttpResponse, Error> {
