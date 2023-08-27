@@ -25,7 +25,7 @@ fn get_feed_config(feed_name: String) -> Result<FeedConfig, String> {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    HttpServer::new(|| App::new().service(serve_feed))
+    HttpServer::new(|| App::new().service(rss_exp))
         .bind(("127.0.0.1", 8080))?
         .run()
         .await
@@ -34,7 +34,7 @@ async fn main() -> std::io::Result<()> {
 // TODO: Return a file instead of text
 // TODO: Modify RSS address to address from GET request
 #[get("/{feed}")]
-async fn serve_feed(feed: web::Path<String>) -> impl Responder {
+async fn rss_exp(feed: web::Path<String>) -> impl Responder {
     let feed_config: FeedConfig = match get_feed_config(feed.to_string()) {
         Ok(config) => config,
         Err(e) => return format!("{}", e),
