@@ -12,6 +12,10 @@ use regex::Regex;
 use reqwest::StatusCode;
 use std::fs;
 
+lazy_static! {
+    static ref CONFIGS: Vec<FeedConfig> = read_configuration();
+}
+
 #[derive(Serialize, Deserialize)]
 struct FeedConfig {
     name: String,
@@ -21,22 +25,18 @@ struct FeedConfig {
     replace_pattern: String,
 }
 
-fn read_configuration() -> FeedConfig {
+fn read_configuration() -> Vec<FeedConfig> {
     let configuration = match fs::read_to_string("./feeds.json") {
         Ok(x) => x,
         Err(e) => panic!("Failed to read ./feeds.json file with error: {}", e),
     };
 
-    let feed_config: FeedConfig = match serde_json::from_str(&configuration) {
+    let feeds_configurations: Vec<FeedConfig> = match serde_json::from_str(&configuration) {
         Ok(x) => x,
         Err(e) => panic!("Failed to parse JSON with error: {}", e),
     };
 
-    feed_config
-}
-
-lazy_static! {
-    static ref CONFIG: FeedConfig = read_configuration();
+    feeds_configurations
 }
 
 #[actix_web::main]
@@ -51,7 +51,7 @@ async fn main() -> std::io::Result<()> {
 async fn rss_rewrite(feed: web::Path<String>) -> Result<HttpResponse, Error> {
     // TODO: Multiple feeds
     let feed_config: &FeedConfig = match get_feed_config(feed.to_string()) {
-        Ok(()) => &CONFIG,
+        Ok(x) => x,
         Err(feed_name) => return not_found(format!("Feed not found: {}", feed_name)).await,
     };
 
@@ -68,12 +68,13 @@ async fn rss_rewrite(feed: web::Path<String>) -> Result<HttpResponse, Error> {
 }
 
 // TODO: Support for multiple feeds
-fn get_feed_config(feed_name: String) -> Result<(), String> {
-    if feed_name == CONFIG.name {
-        Ok(())
-    } else {
-        Err(feed_name)
+fn get_feed_config(feed_name: String) -> Result<&'static FeedConfig, String> {
+    for config in CONFIGS.iter() {
+        if feed_name == config.name {
+            return Ok(config);
+        }
     }
+    return Err(feed_name);
 }
 
 fn feed_modifier(feed_config: &FeedConfig, feed_content: String) -> String {

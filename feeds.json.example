@@ -1,6 +1,8 @@
-{
-	"name": "example_name",
-	"url": "",
-	"match_pattern": "_FRAGMENT",
-	"replace_pattern": ""
-}
+[
+	{
+		"name": "example_name",
+		"url": "",
+		"match_pattern": "_FRAGMENT",
+		"replace_pattern": ""
+	}
+]
