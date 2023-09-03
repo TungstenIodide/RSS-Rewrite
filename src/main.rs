@@ -12,8 +12,9 @@ use regex::Regex;
 use reqwest::StatusCode;
 use std::fs;
 
-use std::fs::File;
-use std::io::Write;
+// For debugging
+// use std::fs::File;
+// use std::io::Write;
 
 lazy_static! {
     static ref CONFIGS: Vec<FeedConfig> = read_configuration();
@@ -62,12 +63,12 @@ async fn rss_rewrite(feed: web::Path<String>) -> Result<HttpResponse, Error> {
         Err(feed_name) => return not_found(format!("Feed not found: {}", feed_name)).await,
     };
 
-    let mut feed_content: String = match download_feed(&feed_config.url).await {
+    let original_feed: String = match download_feed(&feed_config.url).await {
         Ok(feed_contents) => feed_contents,
         Err(e) => return not_found(format!("Failed to fetch feed with error: {}", e)).await,
     };
 
-    feed_content = feed_modifier(&feed_config, feed_content);
+    let feed_content = feed_modifier(&feed_config, original_feed);
 
     Ok(HttpResponse::build(StatusCode::OK)
         .content_type("application/rss+xml")
@@ -83,18 +84,19 @@ fn get_feed_config(feed_name: String) -> Result<&'static FeedConfig, String> {
     return Err(feed_name);
 }
 
-fn feed_modifier(feed_config: &FeedConfig, feed_content: String) -> String {
-    let mut content = feed_content;
+fn feed_modifier(feed_config: &FeedConfig, original_feed: String) -> String {
+    let mut content = original_feed;
 
     for replace_rule in feed_config.replace_rules.iter() {
-        replace_rule
+        content = replace_rule
             .match_pattern
             .replace_all(&mut content, &replace_rule.replace_with)
             .to_string();
     }
 
-    let mut output = File::create("./feed.rss").expect("a");
-    write!(output, "{}", content).expect("a");
+    // For debugging
+    //    let mut output = File::create("./feed.rss").expect("a");
+    //    write!(output, "{}", content).expect("a");
 
     return content.to_string();
 }
