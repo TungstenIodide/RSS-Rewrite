@@ -67,7 +67,6 @@ async fn rss_rewrite(feed: web::Path<String>) -> Result<HttpResponse, Error> {
         .body(feed_content))
 }
 
-// TODO: Support for multiple feeds
 fn get_feed_config(feed_name: String) -> Result<&'static FeedConfig, String> {
     for config in CONFIGS.iter() {
         if feed_name == config.name {
@@ -84,6 +83,7 @@ fn feed_modifier(feed_config: &FeedConfig, feed_content: String) -> String {
         .to_string()
 }
 
+// TODO: Improve the error handling
 async fn download_feed(upstream_feed_url: &String) -> reqwest::Result<String> {
     Ok(reqwest::get(upstream_feed_url).await?.text().await?)
 }
