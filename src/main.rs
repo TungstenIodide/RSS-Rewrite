@@ -12,17 +12,25 @@ use regex::Regex;
 use reqwest::StatusCode;
 use std::fs;
 
+use std::fs::File;
+use std::io::Write;
+
 lazy_static! {
     static ref CONFIGS: Vec<FeedConfig> = read_configuration();
+}
+
+#[derive(Serialize, Deserialize)]
+struct Replace {
+    #[serde(with = "serde_regex")]
+    match_pattern: Regex,
+    replace_with: String,
 }
 
 #[derive(Serialize, Deserialize)]
 struct FeedConfig {
     name: String,
     url: String,
-    #[serde(with = "serde_regex")]
-    match_pattern: Regex,
-    replace_pattern: String,
+    replace_rules: Vec<Replace>,
 }
 
 fn read_configuration() -> Vec<FeedConfig> {
@@ -49,7 +57,6 @@ async fn main() -> std::io::Result<()> {
 
 #[get("/{feed}")]
 async fn rss_rewrite(feed: web::Path<String>) -> Result<HttpResponse, Error> {
-    // TODO: Multiple feeds
     let feed_config: &FeedConfig = match get_feed_config(feed.to_string()) {
         Ok(x) => x,
         Err(feed_name) => return not_found(format!("Feed not found: {}", feed_name)).await,
@@ -77,10 +84,19 @@ fn get_feed_config(feed_name: String) -> Result<&'static FeedConfig, String> {
 }
 
 fn feed_modifier(feed_config: &FeedConfig, feed_content: String) -> String {
-    feed_config
-        .match_pattern
-        .replace_all(&feed_content, &feed_config.replace_pattern)
-        .to_string()
+    let mut content = feed_content;
+
+    for replace_rule in feed_config.replace_rules.iter() {
+        replace_rule
+            .match_pattern
+            .replace_all(&mut content, &replace_rule.replace_with)
+            .to_string();
+    }
+
+    let mut output = File::create("./feed.rss").expect("a");
+    write!(output, "{}", content).expect("a");
+
+    return content.to_string();
 }
 
 // TODO: Improve the error handling

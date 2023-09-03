@@ -1,8 +1,34 @@
 [
 	{
-		"name": "example_name",
-		"url": "",
-		"match_pattern": "_FRAGMENT",
-		"replace_pattern": ""
+		"name": "feed1",
+		"url": "example.com/rss2",
+		"replace_rules": [
+			{
+				"match_pattern": "_FRAGMENT",
+				"replace_with": ""
+			}
+		]
+	},
+	{
+		"name": "feed2",
+		"url": "example.com/rss2",
+		"replace_rules": [
+			{
+				"match_pattern": "_SHORT_",
+				"replace_with": "_LONG_"
+			},
+			{
+				"match_pattern": "_FRGM_-14.1",
+				"replace_with": "_-14.2"
+			},
+			{
+				"match_pattern": "_FRGM_-14.0",
+				"replace_with": "_-14.1"
+			},
+			{
+				"match_pattern": "14\\.0LUFS_SHORT\\.mp3",
+				"replace_with": "14.0LUFS_LONG_V3.mp3"
+			}
+		]
 	}
 ]
