@@ -10,8 +10,9 @@ use actix_web::{get, web, App, Error, HttpResponse, HttpServer};
 use lazy_static::lazy_static;
 use regex::Regex;
 use reqwest::StatusCode;
-use std::fs;
+use std::{env::args, fs};
 
+// TODO: Add CLI argument for debugging
 // For debugging
 // use std::fs::File;
 // use std::io::Write;
@@ -34,9 +35,18 @@ struct FeedConfig {
     replace_rules: Vec<Replace>,
 }
 
+// TODO: Rewrite in mian as config for Actix apps.
 fn read_configuration() -> Vec<FeedConfig> {
+    //TODO: Write correct CLI argument parsing
+    let args: Vec<String> = args().collect();
+    let config_file = if let Some(x) = args.get(1) {
+        x
+    } else {
+        "./feeds.json"
+    };
+
     let configuration =
-        fs::read_to_string("./feeds.json").expect("Failed to read feed configuration!");
+        fs::read_to_string(config_file).expect("Failed to read feed configuration!");
 
     let feeds_configurations: Vec<FeedConfig> =
         serde_json::from_str(&configuration).expect("Configuration file has a wrong format!");
@@ -46,8 +56,11 @@ fn read_configuration() -> Vec<FeedConfig> {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    const ADDRESS: &str = "0.0.0.0:8000";
+    println!("Server listening at: {}", ADDRESS);
+
     HttpServer::new(|| App::new().service(rss_rewrite))
-        .bind(("0.0.0.0", 8080))?
+        .bind(ADDRESS)?
         .run()
         .await
 }
