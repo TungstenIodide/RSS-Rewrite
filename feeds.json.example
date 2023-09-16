@@ -1,7 +1,7 @@
 [
 	{
-		"name": "feed1",
-		"url": "example.com/rss2",
+		"name": "stan",
+		"url": "",
 		"replace_rules": [
 			{
 				"match_pattern": "_FRAGMENT",
@@ -10,20 +10,28 @@
 		]
 	},
 	{
-		"name": "feed2",
-		"url": "example.com/rss2",
+		"name": "raport",
+		"url": "",
 		"replace_rules": [
 			{
 				"match_pattern": "_SHORT_",
 				"replace_with": "_LONG_"
 			},
 			{
-				"match_pattern": "_FRGM_-14.1",
+				"match_pattern": "_SHORT",
+				"replace_with": ""
+			},
+			{
+				"match_pattern": "_FR[A]?GM_-14.1",
 				"replace_with": "_-14.2"
 			},
 			{
-				"match_pattern": "_FRGM_-14.0",
+				"match_pattern": "_FR[A]?GM_-14.0",
 				"replace_with": "_-14.1"
+			},
+			{
+				"match_pattern": "_FRGM",
+				"replace_with": ""
 			},
 			{
 				"match_pattern": "14\\.0LUFS_SHORT\\.mp3",
