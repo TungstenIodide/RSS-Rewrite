@@ -5,15 +5,18 @@
   </p>
 </div>
 
-I wrote it specifically for modifying links to podcast episodes.
 
-One Polish medium offers only fragments of episodes on their official
-feed for premium subscribers but it's enough to remove "_FRAGMENT"
-from the URL.
+Onet offers premium subscribers only fragments of podcasts over RSS, forcing the use of their mobile application.
 
-It still shows episode duration of the fragment, as I can't modify
-metadata without having to download the file and check it during podcast
-refresh. But when you play the episode it is correct.
+Not anymore.
+
+The `feeds.json.example` is preconfigured for Stan Wyjatkowy and Raport Miedzynarodowy.
+Just paste the URLs of your premium feeds.
+
+Stan Wyjatkowy works reliably.
+Raport has inconsistent addresses, with the same URL fragment having multiple potential variants. YMMV
+
+Episode lengths are wrong in the feeds. Writing correct ones would require downloading each episode.
 
 ## License
 
