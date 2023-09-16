@@ -35,15 +35,11 @@ struct FeedConfig {
 }
 
 fn read_configuration() -> Vec<FeedConfig> {
-    let configuration = match fs::read_to_string("./feeds.json") {
-        Ok(x) => x,
-        Err(e) => panic!("Failed to read ./feeds.json file with error: {}", e),
-    };
+    let configuration =
+        fs::read_to_string("./feeds.json").expect("Failed to read feed configuration!");
 
-    let feeds_configurations: Vec<FeedConfig> = match serde_json::from_str(&configuration) {
-        Ok(x) => x,
-        Err(e) => panic!("Failed to parse JSON with error: {}", e),
-    };
+    let feeds_configurations: Vec<FeedConfig> =
+        serde_json::from_str(&configuration).expect("Configuration file has a wrong format!");
 
     feeds_configurations
 }
